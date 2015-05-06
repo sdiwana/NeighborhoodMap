@@ -1,0 +1,309 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <title>Google Maps and knockoutjs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!--
+    Code based on:
+    http://stackoverflow.com/questions/14657779/google-maps-bounce-animation-on-marker-for-a-limited-period for marker settimeout function
+    http://stackoverflow.com/questions/14657779/google-maps-bounce-animation-on-marker-for-a-limited-period for stopping marker bouncing
+    https://gist.github.com/ChrisLTD/5992716 for infowindow
+    http://jsfiddle.net/t9wcC/ for multiple markers on same map
+    http://jsfiddle.net/5pag6aq3/ for data display and filtering
+    https://developers.google.com/maps/documentation/javascript/examples/marker-remove for marker display and hide
+    -->
+
+    <!--
+    Using Twitter Bootstrap and Knockout.js
+
+    STILL LEFT TO DO:
+    1.  Get lat lang with google api, not hard code it
+    2.  Click on side item also opens infowindow?
+    3.  Add ajax to api call? and
+    4.  Add error handling to api call, disconnect to check error!!
+    5.  Add foursquare? and another? api to get windowinfo content.
+    6.  Must work on all media, iphone, ipad, computer???
+    7.  Also, use bootstrap formatting for better presentation
+    8.  May be fix 'Key location' code to be written in javascript?
+    6. Clean up and divide code
+
+    -->
+</head>
+
+<body>
+
+    <!-- A. 'View' part of knockout.js with some data binding. -->
+    <div class="container-fluid">
+
+        <header>
+            <h1 class="header">Neighborhood Map</h1>
+        </header>
+
+        <!-- Start Search box spanning 12 columns -->
+        <div class="row-fluid"> <!-- start row fluid 1 -->
+        <div class="col-md-12 paddingTop"> <!-- start span12 -->
+
+            <section>
+                <input class="col-md-12 marginBottom" id="search" value="Search" data-bind="value: selectedfilter, valueUpdate: 'afterkeydown'" />
+            </section>
+
+        </div> <!-- end span12 -->
+        </div> <!-- end row fluid 1 -->
+        <!-- End Search Box -->
+
+        <!-- Start Side Bar spanning 4 columns -->
+        <div class="row-fluid"> <!-- start row fluid 2 containing side bar and map area -->
+        <div class="col-md-4"> <!-- start span 4 containing sidebar -->
+
+            <!-- Display key locations list in side bar -->
+            <section id="Place">
+            <strong>Key Locations</strong>
+            <ul>
+                <li><a href="#BaltimoreHarbor" data-bind='click: function() {optionSelector("place", "Baltimore Harbor")}'>Baltimore Harbor</a></li>
+
+                <li><a href="#NationalAquariumofMaryland" data-bind='click: function() {optionSelector("place", "National Aquarium of Maryland")}'>National Aquarium of Maryland</a></li>
+
+                <li><a href="#FortMcHenry" data-bind='click: function() {optionSelector("place", "Fort McHenry")}'>Fort McHenry</a></li>
+
+                <li><a href="#WaltersArtMuseum" data-bind='click: function() {optionSelector("place", "Walters Art Museum")}'>Walters Art Museum</a></li>
+
+                <li><a href="#OrioleParksatCamdenYard" data-bind='click: function() {optionSelector("place", "Oriole Parks at Camden Yard")}'>Oriole Parks at Camden Yard</a></li>
+
+                <li><a href="#MarylandInstituteCollegeofArt" data-bind='click: function() {optionSelector("place", "Maryland Institute College of Art")}'>Maryland Institute College of Art</a></li>
+            </ul>
+            </section> <!-- End key locations -->
+
+            <!-- Start selected locations list in side bar  -->
+            <section>
+                <p class="paddingTop">Selected Locations</p>
+                <ul data-bind="template: { name: 'location', foreach: filteredLocations }"></ul>
+                    <script type="text/html" id="location">
+                    <li>
+                        <strong data-bind="text: name"></strong>
+                    </li>
+                    </script>
+            </section> <!-- End selected locations -->
+
+        </div> <!-- End Span 4 of sidebar containing key and selected locations -->
+
+
+        <!-- Display Map -->
+        <div id="map" class="col-md-8" data-bind="template: { name: 'location', foreach: filteredMarkers }"></div> <!-- start and end span 8 for map -->
+        <!-- End display map -->
+
+        </div> <!-- start row fluid 2 containing side bar and map area -->
+
+    </div> <!-- end container -->
+
+<script type='text/javascript' src='js/knockout.js'></script>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true"></script>
+<!-- <script type='text/javascript' src='js/map.js'></script> -->
+
+<script>
+// B.  ViewModel part of Knockout.js
+
+
+// Declare global variables
+var map, marker, i;
+
+function initialize() {
+
+    // Create google map with Baltimore, MD as center
+    var baltimore = new google.maps.LatLng(39.280645, -76.606905);
+
+    var mapOptions = {
+        zoom: 12,
+        center: baltimore,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+
+    map = new google.maps.Map(document.getElementById('map'),
+      mapOptions);
+
+    // Use mappedData for location and create location and markers
+    var mappedData = ko.utils.arrayMap(dataFromServer, function (location) {
+        return new addMarker(location.name, location.latitude, location.longitude);
+    });
+
+    // Add locations array to viewModel
+    viewModel.locations(mappedData);
+}
+
+var infowindow = new google.maps.InfoWindow();
+
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+
+// Create object location and marker object
+function addMarker(name, latitude, longitude) {
+
+        this.name = ko.observable(name);
+        this.latitude = ko.observable(latitude);
+        this.longitude = ko.observable(longitude);
+
+        // Set markers for each latitude/longitude
+        marker = new google.maps.Marker({
+            animation: google.maps.Animation.DROP,
+            position: new google.maps.LatLng(latitude, longitude),
+            title: name,
+            map: map
+        });
+
+        //markers is observable now?
+        viewModel.markers.push(marker);
+
+        //Display markers
+        showMarkers();
+}
+
+
+function stopAnimation(marker) {
+    setTimeout(function () {
+        marker.setAnimation(null);
+    }, 1500);
+}
+
+function toggleBounce(map, marker) {
+
+        marker.setAnimation(google.maps.Animation.BOUNCE);
+        stopAnimation(marker);
+}
+
+
+// Sets the markers on the map and provides bounce and infoWindow on the markers
+function setMarkers(map) {
+  for ( i = 0; i < viewModel.markers.length; i++) {
+
+    viewModel.markers[i].setMap(map);
+
+    google.maps.event.addListener(marker, 'click', (function(marker, i) {
+        return function() {
+            toggleBounce(map, marker);
+            infowindow.setContent(viewModel.markers[i].title);
+            infowindow.open(map, marker);
+        }
+    })(marker, i));
+
+  }
+}
+
+// Removes the markers from the map, but keeps them in the array.
+function clearMarkers() {
+  setMarkers(null);
+}
+
+// Shows any markers currently in the array.
+function showMarkers() {
+  setMarkers(map);
+}
+
+// Deletes all markers in the array by removing references to them.
+function deleteMarkers() {
+  clearMarkers();
+  viewModel.markers = [];
+}
+
+// Create viewModel with locations and markers observable array
+var viewModel = {
+    locations: ko.observableArray([]),
+    markers: ko.observableArray([]),
+    selectedfilter: ko.observable(""),
+    selectedName: ko.observable(""),
+};
+
+
+// Create a computed filteredLocations array based on entry in search box,
+// or click on a location name
+viewModel.filteredLocations = ko.computed(function () {
+    //Get the value from search input box
+    var filter = this.selectedfilter().toLowerCase();
+    console.log("filteredLocations, filter = " + filter);
+    if (filter) {
+        //filter locations.name based on entry in search input box
+        this.selectedName("");
+        return ko.utils.arrayFilter(this.locations(), function (location) {
+            return location.name().toLowerCase().indexOf(filter) !== -1;
+        });
+    } else {
+        // filter locations.name based on click on displayed locations name
+        var b = this.selectedName().toLowerCase();
+        if (b) {
+            return ko.utils.arrayFilter(this.locations(), function (location) {
+                console.log("clicked on location = " + location.name());
+                // return clicked on location
+                return location.name().toLowerCase() == b;
+            });
+        }
+        else {
+             console.log("5. uh oh im here now!!");
+        }
+    }
+
+}, viewModel);
+
+
+// Reinitialize filter and clicked name holder
+viewModel.optionSelector = function (selector, data) {
+
+    switch (selector) {
+        case "place":
+            this.selectedfilter("");
+            this.selectedName(data);
+            break;
+        default:
+            this.selectedName("");
+            break;
+    }
+
+};
+
+
+viewModel.filteredMarkers = ko.computed(function () {
+
+    // clear all markers
+    deleteMarkers()
+
+    //Get the value from search input box
+    var filter = this.selectedfilter().toLowerCase();
+
+    if (filter) {
+        //filter locations.name based on entry in search input box
+        this.selectedName("");
+        return ko.utils.arrayFilter(this.locations(), function (location) {
+            if (location.name().toLowerCase().indexOf(filter) !== -1) {
+                return (new addMarker(location.name(), location.latitude(), location.longitude()));
+            }
+        });
+    } else {
+        //filter locations.name based on click on displayed locations name
+        var b = this.selectedName().toLowerCase();
+        if (b) {
+            return ko.utils.arrayFilter(this.locations(), function (location) {
+                // Else return selected location
+                if (location.name().toLowerCase() === b) {
+                    return (new addMarker(b, location.latitude(), location.longitude()));
+                }
+            });
+        }
+
+    }
+
+}, viewModel);
+
+ko.applyBindings(viewModel);
+
+
+// C. Model part of Knockout.js
+var JSONdataFromServer = '[{"name":"Baltimore Harbor","longitude":"-76.707992","latitude":"39.257292"},{"name":"National Aquarium of Maryland","longitude":"-76.607012","latitude":"39.284619"},{"name":"Fort McHenry","longitude":"-76.579887","latitude":"39.264115"},{"name":"Walters Art Museum","longitude":"-76.616099","latitude":"39.296580"},{"name":"Oriole Parks at Camden Yard","longitude":"-76.621757","latitude":"39.283918"}, {"name":"Maryland Institute College of Art","longitude":"-76.622059","latitude":"39.309084"}]';
+
+var dataFromServer = ko.utils.parseJson(JSONdataFromServer);
+
+
+</script>
+
+
+</body>
+</html>

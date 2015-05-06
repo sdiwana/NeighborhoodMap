@@ -1,0 +1,23 @@
+
+#map {
+	width: 50%;
+	height:50%;
+	margin: 0px;
+    padding: 0px
+}
+
+.paddingTop {
+	padding-top: 20px;
+}
+
+.paddingBottom {
+	padding-bottom: 20px;
+}
+
+.marginTop {
+	margin-top: 20px;
+}
+
+.marginBottom {
+	margin-bottom: 20px;
+}
