@@ -1,0 +1,66 @@
+<html>
+<body>
+<div id="names1">
+<div id="names2">
+</div>
+
+<script type='text/javascript' src='js/jQuery.js'></script>
+
+<script>
+
+//https://api.foursquare.com/v2/venues/VENUE_ID/photos
+
+
+$.getJSON('https://api.foursquare.com/v2/venues/search?ll=39.280645, -76.606905&limit=14&radius=1000&client_id=PKAHBB1OAX0B000CG5UUYO4BXV0LWQWKFB51EK3XVNFJ2ULS&client_secret=RDPX01C01RHCYASZIKVH5XXMPVFIPLFHFP1D53UR4GUWQD50&v=20140806',
+function(data) {
+//console.log(data);
+    $.each(data.response.venues, function(i,venues){
+    	//console.log(JSON.stringify(venues));
+        content1 = '<p> Name: ' + venues.name +
+            ' Address: ' + venues.location.address +
+            ' Lat/long: ' + venues.location.lat + ', ' + venues.location.lng
+
+            + '</p>';
+			//console.log(JSON.stringify(venues.photos.categories.photos.groups.items));
+        //content2 = '<img src=' + venues.photos.user.photo.prefix +
+            	  //'110x110' + venues.photos.user.photo.suffix + '>';
+        $(content1).appendTo("#names1");
+
+   });
+});
+
+$.getJSON('https://api.foursquare.com/v2/venues/search?ll=39.280645, -76.606905&limit=14&radius=1000&client_id=PKAHBB1OAX0B000CG5UUYO4BXV0LWQWKFB51EK3XVNFJ2ULS&client_secret=RDPX01C01RHCYASZIKVH5XXMPVFIPLFHFP1D53UR4GUWQD50&v=20140806',
+function(data) {
+    $.each(data.response.venues, function(i,venues){
+    	 $.each(venues.categories, function(i,photos){
+    		console.log("photos = " + JSON.stringify(photos));
+    		//console.log("prefix = " + JSON.stringify(photos.icon.prefix));
+    		//console.log("suffix = " + JSON.stringify(photos.icon.suffix));
+    		content2 = '<img src=' + photos.icon.prefix + '/110x110/' + photos.icon.suffix + '>';
+        $(content2).appendTo("#names2");
+		});
+	});
+});
+
+/*
+
+$.getJSON('https://api.foursquare.com/v2/venues/43695300f964a5208c291fe3/photos?oauth_token=WYKNPUKNMUJSQXHA0XUFNXNTPRDSYENYYTBQUK1WRQ2V2C2E&v=20150506',
+	function(data) {
+		$.each(data.response.photos.items, function(i, photos){
+			console.log(JSON.stringify(data.response.photos));
+
+        	content = '<img src=' + photos.user.photo.prefix +
+            	  '110x110' + photos.user.photo.suffix + '>';
+        $(content).appendTo("#names");
+
+
+   });
+});
+
+*/
+
+
+</script>
+
+</body>
+</html>
