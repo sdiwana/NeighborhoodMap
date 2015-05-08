@@ -81,7 +81,7 @@
                 <ul data-bind="template: { name: 'location', foreach: filteredLocations }"></ul>
                     <script type="text/html" id="location">
                     <li>
-                        <a href="#" data-bind="click: function() {showInfoWindow(map, marker, name)},text: name"></a>
+                        <a href="#" data-bind="click: function() {showInfoWindows(map, marker, name, content)}, text: name"></a>
                     </li>
                     </script>
             </section> <!-- End selected locations -->
@@ -106,7 +106,7 @@
 
 
 // Declare global variables
-var map, marker, name, i;
+var map, marker, content, i, infowindow;
 
 function initialize() {
 
@@ -131,7 +131,7 @@ function initialize() {
     viewModel.locations(mappedData);
 }
 
-var infowindow = new google.maps.InfoWindow();
+
 
 google.maps.event.addDomListener(window, 'load', initialize);
 
@@ -171,16 +171,42 @@ function centerMarker(map, marker) {
     map.fitBounds( initialBounds );
 }
 
+function scrollToMarker(index) {
+    map.panTo(markers[index].getPosition());
+}
+
 function toggleBounce(map, marker) {
-        map.setZoom(14);
-        centerMarker(map, marker);
+        map.panTo(marker.getPosition());
         marker.setAnimation(google.maps.Animation.BOUNCE);
         stopAnimation(marker);
 }
 
-function showInfoWindow(map, marker, name) {
+
+infowindow = new google.maps.InfoWindow();
+
+function showInfoWindow(map, marker, name, content) {
      infowindow.setContent(name);
      infowindow.open(map, marker);
+}
+
+function showInfoWindows(map, marker, name, content) {
+
+        var markerLength = viewModel.markers.length;
+        //for ( i = 0; i < viewModel.markers.length; i++) {
+        for ( i = 0; i < markerLength; i++) {
+
+           if ((name() === viewModel.markers[i].title) || (markerLength == 1)) {
+
+                return showInfoWindow(map, viewModel.markers[i], viewModel.markers[i].title, content);
+
+                 //return function() {
+                    //console.log("showInfoWindows, marker = " + viewModel.markers[i].getPosition());
+                    //toggleBounce(map, viewModel.markers[i]);
+                    //showInfoWindow(map, viewModel.markers[i], viewModel.markers[i].title, content);
+                    //}
+            }
+        } (marker, i);
+    //}
 }
 
 // Sets the markers on the map and provides bounce and infoWindow on the markers
@@ -193,7 +219,7 @@ function setMarkers(map) {
     google.maps.event.addListener(marker, 'click', (function(marker, i) {
         return function() {
             toggleBounce(map, marker);
-            showInfoWindow(map, marker, viewModel.markers[i].title);
+            showInfoWindow(map, marker, viewModel.markers[i].title, content);
         }
     })(marker, i));
 
@@ -208,7 +234,7 @@ function clearMarkers() {
 
 // Shows any markers currently in the array.
 function showMarkers() {
-  map.setZoom(12);
+  //map.setZoom(12);
   setMarkers(map);
 }
 
