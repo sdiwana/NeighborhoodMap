@@ -192,21 +192,13 @@ function showInfoWindow(map, marker, name, content) {
 function showInfoWindows(map, marker, name, content) {
 
         var markerLength = viewModel.markers.length;
-        //for ( i = 0; i < viewModel.markers.length; i++) {
+
         for ( i = 0; i < markerLength; i++) {
-
            if ((name() === viewModel.markers[i].title) || (markerLength == 1)) {
-
+                toggleBounce(map, viewModel.markers[i]);
                 return showInfoWindow(map, viewModel.markers[i], viewModel.markers[i].title, content);
-
-                 //return function() {
-                    //console.log("showInfoWindows, marker = " + viewModel.markers[i].getPosition());
-                    //toggleBounce(map, viewModel.markers[i]);
-                    //showInfoWindow(map, viewModel.markers[i], viewModel.markers[i].title, content);
-                    //}
             }
-        } (marker, i);
-    //}
+        }
 }
 
 // Sets the markers on the map and provides bounce and infoWindow on the markers
